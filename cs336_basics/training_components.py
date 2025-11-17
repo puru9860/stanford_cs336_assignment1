@@ -100,7 +100,7 @@ def data_loader(
     num_samples = len(dataset) - context_length
     indices = np.arange(num_samples)
     np.random.shuffle(indices)
-    
+
     for start_idx in range(0, num_samples, batch_size):
         batch_indices = indices[start_idx:start_idx + batch_size]
         x_batch = []
@@ -110,10 +110,11 @@ def data_loader(
             y = dataset[idx + 1:idx + context_length + 1]
             x_batch.append(x)
             y_batch.append(y)
-        
-        x_tensor = torch.tensor(x_batch, dtype=torch.long, device=device)
-        y_tensor = torch.tensor(y_batch, dtype=torch.long, device=device)
-        
+
+        # Convert to numpy arrays first for efficiency, then to tensors
+        x_tensor = torch.from_numpy(np.array(x_batch, dtype=np.int64)).to(device)
+        y_tensor = torch.from_numpy(np.array(y_batch, dtype=np.int64)).to(device)
+
         yield x_tensor, y_tensor
 
 
