@@ -16,10 +16,10 @@ class TrainConfig:
     d_ff: int = 1344        
     rope_theta: float = 10000.0
 
-    batch_size: int = 16
+    batch_size: int = 64
     epochs: int = 10
     max_iters: int = 5000    
-    eval_interval: int = 200
+    eval_interval: int = 1000
     save_interval: int = 1000
     
     # --- Optimizer Params ---

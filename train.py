@@ -6,6 +6,7 @@ from typing import Iterable, Iterator, List, Dict, Tuple
 import pickle
 from pathlib import Path
 import time
+from tqdm import tqdm
 
 from cs336_basics.transformer import TransformerLM
 from cs336_basics.bpe_tokenizer import BPETokenizer
@@ -60,10 +61,11 @@ def train(
 
     for epoch in range(cfg.epochs):
         total_loss = 0.0 
-        for i in range(0, len(data_indices), cfg.batch_size):
+        pbar = tqdm(range(0, len(data_indices), cfg.batch_size), desc=f"Epoch {epoch}")
+        for i in pbar:
             batch_indices = data_indices[i:i + cfg.batch_size]
             
-            lr = cosine_schedule(iter_num, cfg.learning_rate, cfg.min_lr, cfg.warmup_iters, cfg.max_iters)
+            lr = cosine_schedule(iter_num, cfg.warmup_iters, cfg.max_iters, cfg.min_lr, cfg.learning_rate)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
             
@@ -76,19 +78,20 @@ def train(
             
             optimizer.zero_grad()
             loss.backward()
-            # gradient_clipping(model.parameters(), cfg.max_grad_norm)
+            gradient_clipping(model.parameters(), cfg.max_grad_norm)
             optimizer.step()
             
             total_loss += loss.item()
+            pbar.set_postfix(loss=loss.item())
             
             iter_num += 1
             
             if iter_num % cfg.eval_interval == 0:
                 val_loss = evaluate(model, val_data, cfg.batch_size, cfg.context_length, device)
                 model.train()
-                print(f"Epoch {epoch}, Iteration {iter_num}, Loss {total_loss / cfg.eval_interval}, Val Loss {val_loss}")
-            else:
-                print(f"Epoch {epoch}, Iteration {iter_num}, Loss {total_loss / cfg.eval_interval}")
+                tqdm.write(f"Epoch {epoch}, Iteration {iter_num}, Loss {total_loss / cfg.eval_interval}, Val Loss {val_loss}")
+            # else:
+            #     print(f"Epoch {epoch}, Iteration {iter_num}, Loss {total_loss / cfg.eval_interval}")
             if iter_num % cfg.save_interval == 0:
                 save_checkpoint(
                     cfg.checkpoint_dir,
@@ -111,7 +114,7 @@ def evaluate(
     model.eval()
     total_loss = 0.0
     with torch.no_grad():
-        for i in range(0, len(val_data) - context_length, batch_size):
+        for i in tqdm(range(0, len(val_data) - context_length, batch_size), desc="Evaluating", leave=False):
             batch_indices = np.arange(i, i + batch_size)
             x, y = data_loader_fn(val_data, batch_size, context_length, batch_indices, device)
             logits = model(x)
