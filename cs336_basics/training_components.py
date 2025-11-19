@@ -95,27 +95,49 @@ def data_loader(
     dataset: np.typing.NDArray,
     batch_size: int,
     context_length: int,
+    batch_indices: list[int],
     device: torch.device,
-):
-    num_samples = len(dataset) - context_length
-    indices = np.arange(num_samples)
-    np.random.shuffle(indices)
+) -> tuple[torch.Tensor, torch.Tensor]:
+    x_batch = []
+    y_batch = []
+    for idx in batch_indices:
+        x = dataset[idx:idx + context_length]
+        y = dataset[idx + 1:idx + context_length + 1]
+        x_batch.append(x)
+        y_batch.append(y)
 
-    for start_idx in range(0, num_samples, batch_size):
-        batch_indices = indices[start_idx:start_idx + batch_size]
-        x_batch = []
-        y_batch = []
-        for idx in batch_indices:
-            x = dataset[idx:idx + context_length]
-            y = dataset[idx + 1:idx + context_length + 1]
-            x_batch.append(x)
-            y_batch.append(y)
+    # Convert to numpy arrays first for efficiency, then to tensors
+    x_tensor = torch.from_numpy(np.array(x_batch, dtype=np.int64)).to(device)
+    y_tensor = torch.from_numpy(np.array(y_batch, dtype=np.int64)).to(device)
 
-        # Convert to numpy arrays first for efficiency, then to tensors
-        x_tensor = torch.from_numpy(np.array(x_batch, dtype=np.int64)).to(device)
-        y_tensor = torch.from_numpy(np.array(y_batch, dtype=np.int64)).to(device)
+    return x_tensor, y_tensor
 
-        yield x_tensor, y_tensor
+
+# def data_loader(
+#     dataset: np.typing.NDArray,
+#     batch_size: int,
+#     context_length: int,
+#     device: torch.device,
+# ):
+#     num_samples = len(dataset) - context_length
+#     indices = np.arange(num_samples)
+#     np.random.shuffle(indices)
+
+#     for start_idx in range(0, num_samples, batch_size):
+#         batch_indices = indices[start_idx:start_idx + batch_size]
+#         x_batch = []
+#         y_batch = []
+#         for idx in batch_indices:
+#             x = dataset[idx:idx + context_length]
+#             y = dataset[idx + 1:idx + context_length + 1]
+#             x_batch.append(x)
+#             y_batch.append(y)
+
+#         # Convert to numpy arrays first for efficiency, then to tensors
+#         x_tensor = torch.from_numpy(np.array(x_batch, dtype=np.int64)).to(device)
+#         y_tensor = torch.from_numpy(np.array(y_batch, dtype=np.int64)).to(device)
+
+#         yield x_tensor, y_tensor
 
 
 def save_checkpoint(

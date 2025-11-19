@@ -8,7 +8,7 @@ import numpy.typing as npt
 import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
-
+import numpy as np
 
 from cs336_basics.bpe_tokenizer import train_bpe, BPETokenizer
 from cs336_basics.linear import Linear
@@ -487,7 +487,10 @@ def run_get_batch(
         is the sampled input sequences, and the second tuple item is the corresponding
         language modeling labels.
     """
-    return next(data_loader(dataset, batch_size, context_length, torch.device(device)))
+    indices = np.arange(len(dataset) - context_length)
+    np.random.shuffle(indices)
+    batch_indices = indices[:batch_size]
+    return data_loader(dataset, batch_size, context_length, batch_indices, torch.device(device))
 
 
 def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, " ..."]:
