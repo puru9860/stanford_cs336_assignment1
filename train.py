@@ -7,6 +7,7 @@ import pickle
 from pathlib import Path
 import time
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 from cs336_basics.transformer import TransformerLM
 from cs336_basics.bpe_tokenizer import BPETokenizer
@@ -43,6 +44,8 @@ def train(
     
     train_data = np.load(train_path, mmap_mode='r')
     val_data = np.load(val_path, mmap_mode='r')
+
+    writer = SummaryWriter(log_dir=cfg.log_dir)
 
     optimizer = AdamW(
         model.parameters(), 
@@ -83,6 +86,10 @@ def train(
             
             total_loss += loss.item()
             pbar.set_postfix(loss=loss.item())
+
+            if iter_num % cfg.log_interval == 0:
+                writer.add_scalar("Loss/train", loss.item(), iter_num)
+                writer.add_scalar("LearningRate", lr, iter_num)
             
             iter_num += 1
             
@@ -90,6 +97,7 @@ def train(
                 val_loss = evaluate(model, val_data, cfg.batch_size, cfg.context_length, device)
                 model.train()
                 tqdm.write(f"Epoch {epoch}, Iteration {iter_num}, Loss {total_loss / cfg.eval_interval}, Val Loss {val_loss}")
+                writer.add_scalar("Loss/val", val_loss, iter_num)
             # else:
             #     print(f"Epoch {epoch}, Iteration {iter_num}, Loss {total_loss / cfg.eval_interval}")
             if iter_num % cfg.save_interval == 0:
@@ -102,6 +110,8 @@ def train(
                     iter_num,
                     total_loss / cfg.eval_interval
                 )
+    
+    writer.close()
             
 
 def evaluate(

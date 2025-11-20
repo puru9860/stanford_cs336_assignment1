@@ -16,11 +16,13 @@ class TrainConfig:
     d_ff: int = 1344        
     rope_theta: float = 10000.0
 
-    batch_size: int = 64
+    batch_size: int = 16
     epochs: int = 10
-    max_iters: int = 5000    
-    eval_interval: int = 1000
+    max_iters: int = 100000    
+    eval_interval: int = 80000
     save_interval: int = 1000
+    log_interval: int = 100
+    log_dir: str = "runs/tinystories_experiment"
     
     # --- Optimizer Params ---
     learning_rate: float = 5e-4
